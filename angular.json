@@ -98,6 +98,16 @@
             ],
             "scripts": []
           }
+        },
+        "deploy": {
+          "builder": "@angular/fire:deploy",
+          "options": {
+            "prerender": false,
+            "ssr": false,
+            "browserTarget": "moneyLog:build:production",
+            "firebaseProject": "app-money-log-jswang",
+            "firebaseHostingSite": "app-money-log-jswang"
+          }
         }
       }
     }

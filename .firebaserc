@@ -1,0 +1,14 @@
+{
+  "targets": {
+    "app-money-log-jswang": {
+      "hosting": {
+        "moneyLog": [
+          "app-money-log-jswang"
+        ]
+      }
+    }
+  },
+  "projects": {
+    "default": "app-money-log-jswang"
+  }
+}
