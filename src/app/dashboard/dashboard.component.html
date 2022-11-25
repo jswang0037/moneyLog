@@ -1,0 +1,38 @@
+<button class = "btn btn-secondary" (click)="signOut(); ">Sing Out</button>
+<h1>Welcome! {{displayName}}</h1>
+<h2>Setting</h2>
+<h3>Initial</h3>
+<ag-grid-angular
+   style="width: 100%; height: 100px"
+   class="ag-theme-alpine"
+   [columnDefs]="columnDefs"
+   [defaultColDef]="defaultColDef"
+   [rowData]="dataInit"
+   (cellValueChanged) = "onCellValueChange('initial', $event)"
+   [rowSelection]="'multiple'"
+   [animateRows]="true"
+ ></ag-grid-angular>
+<h3>In and Out</h3>
+<button class = "btn btn-primary" (click) = "addData('in_out'); ">Add Row</button>
+<button class = "btn btn-secondary" (click) = "autoSizeAll(false); ">Auto Size</button>
+<button class = "btn btn-danger" (click) = "deleteSelectedRow(); ">Delete Row</button>
+<ag-grid-angular
+   style="width: 100%; height: 500px"
+   class="ag-theme-alpine"
+   [columnDefs]="columnDefs2"
+   [defaultColDef]="defaultColDef2"
+   [rowData]="dataInOut"
+   (cellValueChanged) = "onCellValueChange('in_out', $event)"
+   [rowSelection]="'multiple'"
+   [animateRows]="true"
+   (gridReady)="onInitGridReady($event)"
+ ></ag-grid-angular>
+<h2>Cash Flow</h2>
+ <highcharts-chart 
+ [Highcharts]="Highcharts"
+ [options]="chartOptions"
+ [(update)]="updateFlag"
+
+
+ style="width: 100%; height: 400px; display: block;"
+></highcharts-chart>
