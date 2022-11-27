@@ -3,7 +3,6 @@ import { FireService } from '../fire.service';
 import { Router } from '@angular/router';
 import { ColDef, ValueGetterParams } from 'ag-grid-community';
 import * as Highcharts from 'highcharts'; 
-import { time } from 'console';
 
 @Component({
   selector: 'app-dashboard',
@@ -51,7 +50,7 @@ export class DashboardComponent implements OnInit {
 
   async readData(table: string){
     const data = await this.fireservice.readDataByUid(table, this.uid); 
-    const tempData: object[] = []; 
+    let tempData: object[] = []; 
     data.forEach(element => {
       const tempDict: {[x:string]: any} = {};
 
@@ -64,11 +63,20 @@ export class DashboardComponent implements OnInit {
     })
 
     if(table==="initial"){
+      if(tempData.length===0){
+        tempData = [
+          {
+            'start_date': new Date().toISOString().substring(0, 10), 
+            'start_saving': 0, 
+            'uid': this.uid
+          }
+        ]; 
+      }
       this.dataInit = tempData; 
     }else if(table==="in_out"){
       this.dataInOut = tempData; 
-      this.setPlotData(); 
     }
+    this.setPlotData(); 
   }
 
   setPlotData(){
@@ -92,7 +100,12 @@ export class DashboardComponent implements OnInit {
           &&
           timestamp <= new Date(element['end_data']).getTime()
         ){
-          if(Number(element['date']) === date){
+          if(
+            (element['frequency_type']==='day')
+            ||(element['frequency_type']==='week'&&Number(element['date']) === day)
+            ||(element['frequency_type']==='month'&&Number(element['date']) === date)
+            ||(element['frequency_type']==='year'&&Number(element['date']) === month&&date===1)
+          ){
             var value = Number(element['value']); 
             if(element['type']==='out'){
               value *= -1; 
@@ -131,18 +144,19 @@ export class DashboardComponent implements OnInit {
   toDescription(params: ValueGetterParams) {
     let tempStr = '每'; 
 
-    tempStr += params.data.frequency; 
-    tempStr += '個'
+    //tempStr += params.data.frequency; 
+    //tempStr += '個'
     
     switch(params.data.frequency_type){
+      case 'day':
+        tempStr += '天'; 
+        break;         
       case 'week':
         tempStr += '週'; 
         break; 
-
       case 'month':
         tempStr += '月'; 
         break; 
-
       case 'year':
         tempStr += '年'; 
         break; 
@@ -155,6 +169,9 @@ export class DashboardComponent implements OnInit {
     tempStr += '的'; 
 
     switch(params.data.frequency_type){
+      case 'day':
+        tempStr += '當日'
+        break
       case 'week':
         tempStr += '星期'; 
         switch(params.data.date){
@@ -231,6 +248,8 @@ export class DashboardComponent implements OnInit {
       id, 
       newData
     )
+    
+    this.setPlotData(); 
   }
 
   onInitGridReady(params: any){
@@ -272,6 +291,7 @@ export class DashboardComponent implements OnInit {
     filter: true,
     editable: true
   };
+  
 
   // In and Out
   columnDefs2: ColDef[] = [
@@ -296,12 +316,13 @@ export class DashboardComponent implements OnInit {
       headerName: '頻率類別', 
       cellEditor: 'agSelectCellEditor', 
       cellEditorParams: {
-        values: ['week', 'month', 'year']
+        values: ['day', 'week', 'month', 'year']
       }
     }, 
     { 
       field: 'frequency', 
-      headerName: '頻率'
+      headerName: '頻率', 
+      hide: true
     }, 
     { 
       field: 'date', 
