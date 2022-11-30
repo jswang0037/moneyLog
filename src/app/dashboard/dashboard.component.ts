@@ -1,8 +1,9 @@
 import { Component, OnInit } from '@angular/core'
 import { FireService } from '../fire.service';
 import { Router } from '@angular/router';
-import { ColDef, ValueGetterParams } from 'ag-grid-community';
+import { ColDef, ValueGetterParams, ICellEditorComp, ICellEditorParams} from 'ag-grid-community';
 import * as Highcharts from 'highcharts'; 
+import { ThisReceiver } from '@angular/compiler';
 
 @Component({
   selector: 'app-dashboard',
@@ -83,7 +84,12 @@ export class DashboardComponent implements OnInit {
     const start_date = this.dataInit[0]['start_date']; 
     var start_saving = Number(this.dataInit[0]['start_saving']); 
     const nowTimestamp = new Date(start_date).getTime(); 
-    var dataPlot = [[nowTimestamp, start_saving]]; 
+    var dataPlot = [{
+      x: nowTimestamp, 
+      y: start_saving, 
+      desc: '初始值', 
+      value: start_saving
+    }]; 
 
     for(var i=0; i<=365; i++){
       const timestamp = nowTimestamp + 86400*i*1000; 
@@ -111,7 +117,14 @@ export class DashboardComponent implements OnInit {
               value *= -1; 
             }
             start_saving += value
-            dataPlot.push([timestamp, start_saving])
+            dataPlot.push(
+              {
+                x: timestamp, 
+                y: start_saving, 
+                desc: element['desc'], 
+                value: value
+              }
+            )
           }
         }
       }
@@ -268,12 +281,51 @@ export class DashboardComponent implements OnInit {
     this.gridColumnApi.autoSizeColumns(allColumnIds, skipHeader);
   }
 
+  setLanguage(language: string){
+    this.language = language; 
+
+    this.languagePack = this.languageFullPack[language]; 
+  }
+
   displayName: string|null = '';   
   uid: string|null = ''; 
   dataInit!: {[x: string]: any}[]; 
   dataInOut!: {[x: string]: any}[]; 
   gridApi!: any; 
   gridColumnApi!: any; 
+
+  language: string = 'zh_tw'; 
+  languageFullPack: {[x: string]: {[x: string]: string}} = {
+    'en': {
+      signout: 'Sign Out', 
+      welcome: 'Welcome! ', 
+      setting: 'Setting', 
+      initial: 'Initial Value', 
+      p1: 'Use ', 
+      mark1: 'double clicks ', 
+      p2: 'to change the value. ', 
+      inAndOut: 'In and Out', 
+      addRow: 'Add Row', 
+      autoSize: 'Auto Size', 
+      deleteRow: 'Delete Selected Row', 
+      cashFlow: 'Cash Flow'
+    }, 
+    'zh_tw': {
+      signout: '登出', 
+      welcome: '歡迎！', 
+      setting: '設定', 
+      initial: '初始值', 
+      p1: '使用', 
+      mark1: '雙擊', 
+      p2: '改變設定值。', 
+      inAndOut: '收入與支出', 
+      addRow: '新增一筆收支', 
+      autoSize: '自動調整寬度', 
+      deleteRow: '刪除選取的資料', 
+      cashFlow: '現金流'
+    }
+  }; 
+  languagePack = this.languageFullPack['zh_tw']; 
 
   // Initial
   columnDefs: ColDef[] = [
@@ -283,7 +335,8 @@ export class DashboardComponent implements OnInit {
     },
     { 
       field: 'start_date', 
-      headerName: '初始日期 (yyyy-mm-dd)'
+      headerName: '初始日期',
+      cellEditor: DatePicker
     }
   ];
   defaultColDef: ColDef = {
@@ -297,11 +350,13 @@ export class DashboardComponent implements OnInit {
   columnDefs2: ColDef[] = [
     { 
       field: 'start_date', 
-      headerName: '開始日期'
+      headerName: '開始日期', 
+      cellEditor: DatePicker
     },
     { 
       field: 'end_data', 
-      headerName: '結束日期'
+      headerName: '結束日期', 
+      cellEditor: DatePicker
     }, 
     {
       field: 'type', 
@@ -351,10 +406,28 @@ export class DashboardComponent implements OnInit {
   Highcharts: typeof Highcharts = Highcharts;
   updateFlag = false; 
   chartOptions: Highcharts.Options = {
+    chart: {
+      zooming: {
+        type: 'x'
+      }
+    }, 
+    title: {
+      text: '趨勢圖'
+    }, 
     series: [{
       data: [],
-      type: 'line'
+      type: 'line', 
+      name: '存款', 
+      findNearestPointBy: 'xy'
     }], 
+    tooltip: {
+      dateTimeLabelFormats: {
+        day: '%Y-%m-%d', 
+        month: '%Y-%m',
+        year: '%Y'
+      }, 
+      pointFormat: '存款: {point.y}<br>變動: {point.value}<br>備註: {point.desc}'
+    }, 
     xAxis: {
       type: 'datetime',
       dateTimeLabelFormats: { // don't display the year
@@ -372,4 +445,48 @@ export class DashboardComponent implements OnInit {
     this.checkAuth(); 
   }
 
+}
+class DatePicker implements ICellEditorComp {
+  eInput!: HTMLInputElement;
+
+  // gets called once before the renderer is used
+  init(params: ICellEditorParams) {
+    // create the cell
+    this.eInput = document.createElement('input');
+    this.eInput.type = 'date'; 
+    this.eInput.onchange = () =>{
+      this.eInput.select(); 
+    }
+    this.eInput.value = params.value;
+    this.eInput.classList.add('ag-input');
+    this.eInput.style.height = '100%';
+  }
+
+  // gets called once when grid ready to insert the element
+  getGui() {
+    return this.eInput;
+  }
+
+  // focus and select can be done after the gui is attached
+  afterGuiAttached() {
+    this.eInput.focus();
+    this.eInput.select();
+  }
+
+  // returns the new value after editing
+  getValue() {
+    return this.eInput.value;
+  }
+
+  // any cleanup we need to be done here
+  destroy() {
+    // but this example is simple, no cleanup, we could
+    // even leave this method out as it's optional
+  }
+
+  // if true, then this editor will appear in a popup
+  isPopup() {
+    // and we could leave this method out also, false is the default
+    return true;
+  }
 }
