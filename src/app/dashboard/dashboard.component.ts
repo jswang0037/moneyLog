@@ -1,9 +1,9 @@
 import { Component, OnInit } from '@angular/core'
 import { FireService } from '../fire.service';
 import { Router } from '@angular/router';
+import { ColourCellRenderer } from '../colour-cell-renderer.component';
 import { ColDef, ValueGetterParams, ICellEditorComp, ICellEditorParams} from 'ag-grid-community';
 import * as Highcharts from 'highcharts'; 
-import { ThisReceiver } from '@angular/compiler';
 
 @Component({
   selector: 'app-dashboard',
@@ -344,7 +344,8 @@ export class DashboardComponent implements OnInit {
     filter: true,
     editable: true
   };
-  
+  colorList = ['Red', 'Orange', 'Yellow', 'Green', 'Blue', 'Purple', 'Black', 'Grey']; 
+  frequencyList = ['day', 'week', 'month', 'year']; 
 
   // In and Out
   columnDefs2: ColDef[] = [
@@ -371,8 +372,9 @@ export class DashboardComponent implements OnInit {
       headerName: '頻率類別', 
       cellEditor: 'agSelectCellEditor', 
       cellEditorParams: {
-        values: ['day', 'week', 'month', 'year']
-      }
+        values: this.frequencyList
+      }, 
+      comparator: (valueA, valueB, nodeA, nodeB, isDescending) => this.frequencyList.indexOf(valueB) - this.frequencyList.indexOf(valueA)
     }, 
     { 
       field: 'frequency', 
@@ -381,15 +383,27 @@ export class DashboardComponent implements OnInit {
     }, 
     { 
       field: 'date', 
-      headerName: '發生日'
+      headerName: '發生日', 
+      comparator: (valueA, valueB, nodeA, nodeB, isDescending) => Number(valueB) - Number(valueA)
     }, 
     { 
       field: 'value', 
-      headerName: '金額'
-    },  
+      headerName: '金額', 
+      comparator: (valueA, valueB, nodeA, nodeB, isDescending) => Number(valueB) - Number(valueA)
+    }, 
     { 
       field: 'desc', 
       headerName: '備註'
+    }, 
+    { 
+      field: 'color', 
+      headerName: '顏色', 
+      cellRenderer: ColourCellRenderer, 
+      cellEditor: 'agSelectCellEditor', 
+      cellEditorParams: {
+        values: this.colorList
+      }, 
+      comparator: (valueA, valueB, nodeA, nodeB, isDescending) => this.colorList.indexOf(valueB) - this.colorList.indexOf(valueA)
     }, 
     {       
       headerName: '敘述', 
@@ -454,9 +468,6 @@ class DatePicker implements ICellEditorComp {
     // create the cell
     this.eInput = document.createElement('input');
     this.eInput.type = 'date'; 
-    this.eInput.onchange = () =>{
-      this.eInput.select(); 
-    }
     this.eInput.value = params.value;
     this.eInput.classList.add('ag-input');
     this.eInput.style.height = '100%';
@@ -487,6 +498,6 @@ class DatePicker implements ICellEditorComp {
   // if true, then this editor will appear in a popup
   isPopup() {
     // and we could leave this method out also, false is the default
-    return true;
+    return false;
   }
 }
